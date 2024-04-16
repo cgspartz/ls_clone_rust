@@ -50,17 +50,23 @@ fn parse_size(size: u64) -> String {
 	let length = size.checked_ilog10().unwrap_or(0) + 1;
 	let mut res = size.to_string();
 	if length > 3 { 
-		res.insert(1, '.');
+		if length%3==2 {
+			res.insert(2, '.');
+		} else if length%3==1 {
+			res.insert(1, '.');
+		} else {
+			res.insert(3, '.');
+		}
 	}
-	[res,bytes(length)].join("")
+	[res,bytes_symbol(length)].join("")
 }
 
-fn bytes(length: u32) -> String {
+fn bytes_symbol(length: u32) -> String {
 	match length {
-		1..=3 => "kb",
-		4..=6 => "mB",
-		7..=9 => "GB",
-		10..=12 => "TB",
+		1..=3 => "B",
+		4..=6 => "kB",
+		7..=9 => "mB",
+		10..=12 => "GB",
 		_ => ""
 	}.to_string()
 }
