@@ -1,5 +1,5 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{env, fs};
+use std::path::{Path,PathBuf};
 use std::error::Error;
 use std::process;
 use chrono::{DateTime, Local};
@@ -9,18 +9,15 @@ use chrono::{DateTime, Local};
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 use std::os::unix::fs::PermissionsExt;
 
-use structopt::StructOpt;
-
-#[derive(StructOpt, Debug)]
-struct Opt {
-	/// Output file
-	#[structopt(default_value = ".", parse(from_os_str))]
-	path: PathBuf,
-}
-
 fn main() {
-	let opt = Opt::from_args();
-	if let Err(ref e) = run(&opt.path) {
+	let args: Vec<String> = env::args().skip(1).collect();
+	let mut path = PathBuf::new();
+	if args.len() > 0 {
+		path.push(&args[0]);
+	} else {
+		path.push(".");
+	}
+	if let Err(ref e) = run(&path) {
 		println!("{}", e);
 		process::exit(1);
 	}
