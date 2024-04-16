@@ -38,15 +38,34 @@ fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
 				let size = metadata.len();
 				let modified: DateTime<Local> = DateTime::from(metadata.modified()?);
 				let mode = metadata.permissions().mode();
-				println!("{} {:>5}b {} {}",
+				println!("{0: <10} {1:<10} {2: <10} {3: <10}",
 						 parse_permissions(mode as u16),
-						 size,
+						 parse_size(size),
 						 modified.format("%_d %b %H:%M").to_string(),
 						 file_name
 				);
 		}
 	}
 	Ok(())
+}
+
+fn parse_size(size: u64) -> String {
+	let length = size.checked_ilog10().unwrap_or(0) + 1;
+	let mut res = size.to_string();
+	if length > 3 { 
+		res.insert(1, '.');
+	}
+	[res,bytes(length)].join("")
+}
+
+fn bytes(length: u32) -> String {
+	match length {
+		1..=3 => "kb",
+		4..=6 => "mB",
+		7..=9 => "GB",
+		10..=12 => "TB",
+		_ => ""
+	}.to_string()
 }
 
 fn parse_permissions(mode: u16) -> String {
