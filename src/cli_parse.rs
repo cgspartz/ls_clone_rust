@@ -1,17 +1,9 @@
 use std::collections::BTreeMap;
-use clap::{command, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command};
+use clap::{arg, command, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command};
 
 pub fn cli() -> Command {
     command!()
-        .group(ArgGroup::new("directory").multiple(false))
-        .next_help_heading("DIRECTORY")
-        .args([
-            position_sensitive_flag(Arg::new("dir"))
-                .long("dir")
-                .action(ArgAction::Append)
-                .help("File directory you would like to search")
-                .group("directory"),
-        ])
+        .arg(arg!([directory] "Optional directory to search through"))
         .group(ArgGroup::new("operators").multiple(true))
         .next_help_heading("OPERATORS")
         .args([

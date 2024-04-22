@@ -3,20 +3,28 @@ use std::path::Path;
 use std::error::Error;
 use std::process;
 use chrono::{DateTime, Local};
-use cliParse::Value;
+mod cli_parse;
+use cli_parse::Value;
 // Examples:
 // * `S_IRGRP` stands for "read permission for group",
 // * `S_IXUSR` stands for "execution permission for user"
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 use std::os::unix::fs::PermissionsExt;
-mod cliParse;
 
 fn main() {
-	let matches = cliParse::cli().get_matches();
+	let matches: clap::ArgMatches = cli_parse::cli().get_matches();
 	let values = Value::from_matches(&matches);
-	println!("{values:?}",);
-	let path = Path::new(".");
-	if let Err(ref e) = run(path) {
+	let mut dir= ".";
+	for (id,value) in values.iter() {
+		if id.as_str() == "directory" {
+			match value {
+				Value::String(value) => dir = value,
+				_ => println!("Something else"),
+			}
+		}
+	}
+	let path = Path::new(dir);
+	if let Err(ref e) = run(&path) {
 		println!("{}", e);
 		process::exit(1);
 	}
