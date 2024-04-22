@@ -16,7 +16,7 @@ fn main() {
 	let values = Value::from_matches(&matches);
 	let mut dir= ".";
 	let mut hiddenfiles = &false;
-	let mut _humansize = &false;
+	let mut humansize = &false;
 	for (id,value) in values.iter() {
 		if id.as_str() == "directory" {
 			match value {
@@ -24,20 +24,28 @@ fn main() {
 				_ => println!("Thats not right"),
 			}
 		} else if id.as_str() == "all" {
-			match value {
-				Value::Bool(value) => hiddenfiles = value,
-				_ => println!("Thats not right"),
-			}
+			hiddenfiles = value_bool(value);
+		} else if id.as_str() == "size" {
+			humansize = value_bool(value);
 		}
 	}
 	let path = Path::new(dir);
-	if let Err(ref e) = run(&path, hiddenfiles) {
+	if let Err(ref e) = run(&path, hiddenfiles, humansize) {
 		println!("{}", e);
 		process::exit(1);
 	}
 }
 
-fn run(dir: &Path, hide: &bool) -> Result<(), Box<dyn Error>> {
+fn value_bool(val:&Value) -> &bool {
+	let res;
+	match val {
+		Value::Bool(value) => res = value,
+		_ => res = &false,
+	}
+	res
+}
+
+fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
@@ -50,11 +58,17 @@ fn run(dir: &Path, hide: &bool) -> Result<(), Box<dyn Error>> {
 				}
 				let metadata = entry.metadata()?;
 				let size = metadata.len();
+				let sizeout;
+				if human == &true {
+					sizeout = parse_size(size);
+				} else {
+					sizeout = size.to_string();
+				}
 				let modified: DateTime<Local> = DateTime::from(metadata.modified()?);
 				let mode = metadata.permissions().mode();
 				println!("{0: <10} {1:<10} {2: <10} {3: <10}",
 						 parse_permissions(mode as u16),
-						 parse_size(size),
+						 sizeout,
 						 modified.format("%_d %b %H:%M").to_string(),
 						 file_name
 				);
