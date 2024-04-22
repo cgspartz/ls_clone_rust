@@ -15,22 +15,29 @@ fn main() {
 	let matches: clap::ArgMatches = cli_parse::cli().get_matches();
 	let values = Value::from_matches(&matches);
 	let mut dir= ".";
+	let mut hiddenfiles = &false;
+	let mut _humansize = &false;
 	for (id,value) in values.iter() {
 		if id.as_str() == "directory" {
 			match value {
 				Value::String(value) => dir = value,
-				_ => println!("Something else"),
+				_ => println!("Thats not right"),
+			}
+		} else if id.as_str() == "all" {
+			match value {
+				Value::Bool(value) => hiddenfiles = value,
+				_ => println!("Thats not right"),
 			}
 		}
 	}
 	let path = Path::new(dir);
-	if let Err(ref e) = run(&path) {
+	if let Err(ref e) = run(&path, hiddenfiles) {
 		println!("{}", e);
 		process::exit(1);
 	}
 }
 
-fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
+fn run(dir: &Path, hide: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
@@ -38,6 +45,9 @@ fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
 						.file_name()
 						.into_string()
 						.or_else(|f| Err(format!("Invalid entry: {:?}", f)))?;
+				if file_name.chars().next().unwrap() == '.' &&  hide == &false{
+					continue;
+				}
 				let metadata = entry.metadata()?;
 				let size = metadata.len();
 				let modified: DateTime<Local> = DateTime::from(metadata.modified()?);
@@ -59,10 +69,13 @@ fn parse_size(size: u64) -> String {
 	if length > 3 { 
 		if length%3==2 {
 			res.insert(2, '.');
+			res = res.chars().take(5).collect();
 		} else if length%3==1 {
 			res.insert(1, '.');
+			res = res.chars().take(4).collect();
 		} else {
 			res.insert(3, '.');
+			res = res.chars().take(6).collect();
 		}
 	}
 	[res,bytes_symbol(length)].join("")
@@ -74,6 +87,7 @@ fn bytes_symbol(length: u32) -> String {
 		4..=6 => "kB",
 		7..=9 => "mB",
 		10..=12 => "GB",
+		13..=15 => "TB",
 		_ => ""
 	}.to_string()
 }
