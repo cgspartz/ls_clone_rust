@@ -1,8 +1,10 @@
-use std::{env, fs};
-use std::path::{Path,PathBuf};
+use std::fs;
+use std::path::Path;
 use std::error::Error;
 use std::process;
 use chrono::{DateTime, Local};
+mod cli_parse;
+use cli_parse::Value;
 // Examples:
 // * `S_IRGRP` stands for "read permission for group",
 // * `S_IXUSR` stands for "execution permission for user"
@@ -10,20 +12,40 @@ use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOT
 use std::os::unix::fs::PermissionsExt;
 
 fn main() {
-	let args: Vec<String> = env::args().skip(1).collect();
-	let mut path = PathBuf::new();
-	if args.len() > 0 {
-		path.push(&args[0]);
-	} else {
-		path.push(".");
+	let matches: clap::ArgMatches = cli_parse::cli().get_matches();
+	let values = Value::from_matches(&matches);
+	let mut dir= ".";
+	let mut hiddenfiles = &false;
+	let mut humansize = &false;
+	for (id,value) in values.iter() {
+		if id.as_str() == "directory" {
+			match value {
+				Value::String(value) => dir = value,
+				_ => println!("Thats not right"),
+			}
+		} else if id.as_str() == "all" {
+			hiddenfiles = value_bool(value);
+		} else if id.as_str() == "size" {
+			humansize = value_bool(value);
+		}
 	}
-	if let Err(ref e) = run(&path) {
+	let path = Path::new(dir);
+	if let Err(ref e) = run(&path, hiddenfiles, humansize) {
 		println!("{}", e);
 		process::exit(1);
 	}
 }
 
-fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
+fn value_bool(val:&Value) -> &bool {
+	let res;
+	match val {
+		Value::Bool(value) => res = value,
+		_ => res = &false,
+	}
+	res
+}
+
+fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
@@ -31,13 +53,22 @@ fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
 						.file_name()
 						.into_string()
 						.or_else(|f| Err(format!("Invalid entry: {:?}", f)))?;
+				if file_name.chars().next().unwrap() == '.' &&  hide == &false{
+					continue;
+				}
 				let metadata = entry.metadata()?;
 				let size = metadata.len();
+				let sizeout;
+				if human == &true {
+					sizeout = parse_size(size);
+				} else {
+					sizeout = size.to_string();
+				}
 				let modified: DateTime<Local> = DateTime::from(metadata.modified()?);
 				let mode = metadata.permissions().mode();
 				println!("{0: <10} {1:<10} {2: <10} {3: <10}",
 						 parse_permissions(mode as u16),
-						 parse_size(size),
+						 sizeout,
 						 modified.format("%_d %b %H:%M").to_string(),
 						 file_name
 				);
@@ -52,10 +83,13 @@ fn parse_size(size: u64) -> String {
 	if length > 3 { 
 		if length%3==2 {
 			res.insert(2, '.');
+			res = res.chars().take(5).collect();
 		} else if length%3==1 {
 			res.insert(1, '.');
+			res = res.chars().take(4).collect();
 		} else {
 			res.insert(3, '.');
+			res = res.chars().take(6).collect();
 		}
 	}
 	[res,bytes_symbol(length)].join("")
@@ -67,6 +101,7 @@ fn bytes_symbol(length: u32) -> String {
 		4..=6 => "kB",
 		7..=9 => "mB",
 		10..=12 => "GB",
+		13..=15 => "TB",
 		_ => ""
 	}.to_string()
 }
