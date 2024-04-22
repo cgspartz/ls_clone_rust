@@ -1,43 +1,31 @@
 use std::collections::BTreeMap;
-
 use clap::{command, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command};
 
-fn main() {
-    let matches = cli().get_matches();
-    let values = Value::from_matches(&matches);
-    println!("{values:#?}");
-}
-
-fn cli() -> Command {
+pub fn cli() -> Command {
     command!()
-        .group(ArgGroup::new("tests").multiple(true))
-        .next_help_heading("TESTS")
+        .group(ArgGroup::new("directory").multiple(false))
+        .next_help_heading("DIRECTORY")
         .args([
-            position_sensitive_flag(Arg::new("empty"))
-                .long("empty")
+            position_sensitive_flag(Arg::new("dir"))
+                .long("dir")
                 .action(ArgAction::Append)
-                .help("File is empty and is either a regular file or a directory")
-                .group("tests"),
-            Arg::new("name")
-                .long("name")
-                .action(ArgAction::Append)
-                .help("Base of file name (the path with the leading directories removed) matches shell pattern pattern")
-                .group("tests")
+                .help("File directory you would like to search")
+                .group("directory"),
         ])
         .group(ArgGroup::new("operators").multiple(true))
         .next_help_heading("OPERATORS")
         .args([
-            position_sensitive_flag(Arg::new("or"))
-                .short('o')
-                .long("or")
+            position_sensitive_flag(Arg::new("size"))
+                .short('s')
+                .long("size")
                 .action(ArgAction::Append)
-                .help("expr2 is not evaluate if exp1 is true")
+                .help("Human readable size")
                 .group("operators"),
-            position_sensitive_flag(Arg::new("and"))
+				position_sensitive_flag(Arg::new("all"))
                 .short('a')
-                .long("and")
+                .long("all")
                 .action(ArgAction::Append)
-                .help("Same as `expr1 expr1`")
+                .help("Show all files")
                 .group("operators"),
         ])
 }
@@ -110,5 +98,17 @@ impl Value {
                 unreachable!("id came from matches")
             }
         }
+    }
+}
+
+impl From<String> for Value {
+    fn from(other: String) -> Self {
+        Self::String(other)
+    }
+}
+
+impl From<bool> for Value {
+    fn from(other: bool) -> Self {
+        Self::Bool(other)
     }
 }

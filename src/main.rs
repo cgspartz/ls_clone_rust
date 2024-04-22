@@ -3,51 +3,23 @@ use std::path::Path;
 use std::error::Error;
 use std::process;
 use chrono::{DateTime, Local};
-use clap::{command, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command};
+use cliParse::Value;
 // Examples:
 // * `S_IRGRP` stands for "read permission for group",
 // * `S_IXUSR` stands for "execution permission for user"
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 use std::os::unix::fs::PermissionsExt;
-
-fn cli() -> Command {
-	command!()
-		.group(ArgGroup::new("switches").multiple(true))
-		.next_help_heading("Switches")
-		.args([
-			position_sensitive_flag(Arg::new("human"))
-				.short('h')
-				.long("human")
-				.action(ArgAction::Append)
-				.help("makes the size human readable")
-				.group("switches"),
-			position_sensitive_flag(Arg::new("allfiles"))
-				.short('a')
-				.long("allfiles")
-				.action(ArgAction::Append)
-				.help("Shows all files including hidden ones")
-				.group("switches"),
-		])
-}
+mod cliParse;
 
 fn main() {
-	// let args = Arg::new("ls_clone")
-	// 	.about("Clone of the unix command ls")
-	// 	.arg(Arg::with_name("file-path")
-	// 		.help("File path you want to search in")
-	// 		.takes_value(true)
-	// 		.required(false))
-	// 	.get_mathces();
-	// let mut path = Path::new(args.value_of("file-path").unwrap());
-	// if args.len() > 0 {
-	// 	path.push(&args[0]);
-	// } else {
-	// 	path.push(".");
-	// }
-	// if let Err(ref e) = run(&path) {
-	// 	println!("{}", e);
-	// 	process::exit(1);
-	// }
+	let matches = cliParse::cli().get_matches();
+	let values = Value::from_matches(&matches);
+	println!("{values:?}",);
+	let path = Path::new(".");
+	if let Err(ref e) = run(path) {
+		println!("{}", e);
+		process::exit(1);
+	}
 }
 
 fn run(dir: &Path) -> Result<(), Box<dyn Error>> {
