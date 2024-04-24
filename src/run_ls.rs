@@ -5,13 +5,13 @@ use chrono::{DateTime, Local};
 // Examples:
 // * `S_IRGRP` stands for "read permission for group",
 // * `S_IXUSR` stands for "execution permission for user"
-use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
+use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR, S_IFDIR};
 use std::os::unix::fs::PermissionsExt;
 
 
 pub fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
-        println!("usr|grp|oth size       time mod     file name");
+        println!("d|usr|grp|oth size       time mod     file name");
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
 				let file_name = entry
@@ -72,10 +72,18 @@ fn bytes_symbol(length: u32) -> String {
 }
 
 fn parse_permissions(mode: u16) -> String {
+	let dir = is_dir(mode, S_IFDIR as u16);
 	let user = triplet(mode, S_IRUSR as u16, S_IWUSR as u16, S_IXUSR as u16);
 	let group = triplet(mode, S_IRGRP as u16, S_IWGRP as u16, S_IXGRP as u16);
 	let other = triplet(mode, S_IROTH as u16, S_IWOTH as u16, S_IXOTH as u16);
-	[user, group, other].join("|")
+	[dir, user, group, other].join("|")
+}
+
+fn is_dir(mode: u16, dir: u16) -> String {
+	match mode & dir {
+		0 => "-",
+		_ => "d",
+	}.to_string()
 }
 
 fn triplet(mode: u16, read: u16, write: u16, execute: u16) -> String {
