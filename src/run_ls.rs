@@ -11,7 +11,7 @@ use std::os::unix::fs::PermissionsExt;
 
 pub fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
-        println!("d|usr|grp|oth size       time mod     file name");
+        println!("D|usr|grp|oth size       time mod     file name");
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
 				let file_name = entry
@@ -81,8 +81,8 @@ fn parse_permissions(mode: u16) -> String {
 
 fn is_dir(mode: u16, dir: u16) -> String {
 	match mode & dir {
-		0 => "-",
-		_ => "d",
+		0 => ".",
+		_ => "D",
 	}.to_string()
 }
 
