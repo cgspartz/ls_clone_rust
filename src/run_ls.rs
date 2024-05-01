@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::error::Error;
 use chrono::{DateTime, Local};
+use colored::Colorize;
 // Examples:
 // * `S_IRGRP` stands for "read permission for group",
 // * `S_IXUSR` stands for "execution permission for user"
@@ -11,7 +12,8 @@ use std::os::unix::fs::PermissionsExt;
 
 pub fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> {
 	if dir.is_dir() {
-        println!("D|usr|grp|oth size       time mod     file name");
+        println!("{}{}{}{} {}       {}     {}",
+                "D|".red().bold(),"usr|".magenta().bold(),"grp|".cyan().bold(),"oth".bright_blue().bold(),"size".green(),"time mod".yellow(),"file name".blue());
 		for entry in fs::read_dir(dir)? {
 				let entry = entry?;
 				let file_name = entry
@@ -32,10 +34,10 @@ pub fn run(dir: &Path, hide: &bool, human: &bool) -> Result<(), Box<dyn Error>> 
 				let modified: DateTime<Local> = DateTime::from(metadata.modified()?);
 				let mode = metadata.permissions().mode();
 				println!("{0: <10} {1:<10} {2: <10} {3: <10}",
-						 parse_permissions(mode as u16),
-						 sizeout,
-						 modified.format("%_d %b %H:%M").to_string(),
-						 file_name
+						 parse_permissions(mode as u16).bold(),
+						 sizeout.green(),
+						 modified.format("%_d %b %H:%M").to_string().yellow(),
+						 file_name.blue()
 				);
 		}
 	}
@@ -76,7 +78,8 @@ fn parse_permissions(mode: u16) -> String {
 	let user = triplet(mode, S_IRUSR as u16, S_IWUSR as u16, S_IXUSR as u16);
 	let group = triplet(mode, S_IRGRP as u16, S_IWGRP as u16, S_IXGRP as u16);
 	let other = triplet(mode, S_IROTH as u16, S_IWOTH as u16, S_IXOTH as u16);
-	[dir, user, group, other].join("|")
+	// [dir, user, group, other].join("|")
+    format!("{}|{}|{}|{}",dir.red(),user.magenta(),group.cyan(),other.bright_blue())
 }
 
 fn is_dir(mode: u16, dir: u16) -> String {
