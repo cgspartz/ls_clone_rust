@@ -1,1 +1,1 @@
-Small ls clone that I plan on iterating on as I learn rust
+Small clone of the unix command ls that I plan on iterating on as part of my learning with rust
